@@ -9,7 +9,7 @@ import (
 
 type UserRepository interface {
 	FindAll() ([]models.User, error)
-	FindByID(id int) (models.User, error)
+	FindByID(id string) (models.User, error)
 	Save(user models.User) error
 }
 
@@ -22,28 +22,28 @@ func NewUserRepository(db *sql.DB) UserRepository {
 }
 
 func (r *userRepositoryImpl) FindAll() ([]models.User, error) {
-    var users []models.User
-    query := `SELECT id, first_name, username FROM users`
+	var users []models.User
+	query := `SELECT id, first_name, username FROM users`
 
-    rows, err := r.db.Query(query)
-    if err != nil {
-        return nil, fmt.Errorf("UserRepository.FindAll: error fetching users - %w", err)
-    }
+	rows, err := r.db.Query(query)
+	if err != nil {
+		return nil, fmt.Errorf("UserRepository.FindAll: error fetching users - %w", err)
+	}
 
-    for rows.Next() {
-        var user models.User
-        err := rows.Scan(&user.ID, &user.FirstName, &user.Username)
-        if err != nil {
-            return nil, fmt.Errorf("UserRepository.FindAll: error scanning users - %w", err)
-        }
+	for rows.Next() {
+		var user models.User
+		err := rows.Scan(&user.ID, &user.FirstName, &user.Username)
+		if err != nil {
+			return nil, fmt.Errorf("UserRepository.FindAll: error scanning users - %w", err)
+		}
 
-        users = append(users, user)
-    }
+		users = append(users, user)
+	}
 
 	return users, nil
 }
 
-func (r *userRepositoryImpl) FindByID(id int) (models.User, error) {
+func (r *userRepositoryImpl) FindByID(id string) (models.User, error) {
 	var user models.User
 	query := `SELECT id, first_name, username FROM users WHERE id = $1`
 

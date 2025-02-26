@@ -3,6 +3,7 @@ package repository
 import (
 	"testing"
 
+	"github.com/google/uuid"
 	"github.com/stretchr/testify/assert"
 
 	"github.com/dinizgab/golang-tests/internal/db"
@@ -42,22 +43,30 @@ func TestRepository(t *testing.T) {
 	t.Run("Test find all users", func(t *testing.T) {
 		db.Exec("DELETE FROM users")
 
-		repo.Save(
-			models.User{
-				FirstName: "Gabriel",
-				Username:  "dinizgab",
-			},
-		)
-		repo.Save(
-			models.User{
-				FirstName: "Joao",
-				Username:  "john",
-			},
-		)
+        db.Exec("INSERT INTO users (first_name, username) VALUES ($1, $2)", "Gabriel", "dinizgab")
+        db.Exec("INSERT INTO users (first_name, username) VALUES ($1, $2)", "Joao", "john")
 
 		users, err := repo.FindAll()
 
 		assert.NoError(t, err)
 		assert.Len(t, users, 2)
 	})
+
+    t.Run("Test find user by id", func(t *testing.T) {
+        db.Exec("DELETE FROM users")
+
+        user := models.User{
+            ID: uuid.New().String(),
+            FirstName: "Gabriel",
+            Username: "dinizgab",
+        }
+
+        db.Exec("INSERT INTO users (id, first_name, username) VALUES ($1, $2, $3)", user.ID, user.FirstName, user.Username)
+
+        user, err := repo.FindByID(user.ID)
+
+        assert.NoError(t, err)
+        assert.Equal(t, "Gabriel", user.FirstName)
+        assert.Equal(t, "dinizgab", user.Username)
+    })
 }
