@@ -11,6 +11,8 @@ type UserRepository interface {
 	FindAll() ([]models.User, error)
 	FindByID(id string) (models.User, error)
 	Save(user models.User) error
+	SavePost(userId string, post models.Post) error
+    FindUserPosts(userId string) ([]models.Post, error)
 }
 
 type userRepositoryImpl struct {
@@ -66,4 +68,37 @@ func (r *userRepositoryImpl) Save(user models.User) error {
 	}
 
 	return nil
+}
+
+func (r *userRepositoryImpl) SavePost(userId string, post models.Post) error {
+	query := `INSERT INTO posts (user_id, title, body) VALUES ($1, $2, $3)`
+
+	_, err := r.db.Exec(query, userId, post.Title, post.Body)
+	if err != nil {
+		return fmt.Errorf("UserRepository.SavePost: error saving post - %w", err)
+	}
+
+	return nil
+}
+
+func (r *userRepositoryImpl) FindUserPosts(userId string) ([]models.Post, error) {
+    posts := []models.Post{}
+	query := `SELECT id, title, body FROM posts WHERE user_id = $1`
+
+	rows, err := r.db.Query(query, userId)
+	if err != nil {
+		return nil, fmt.Errorf("UserRepository.FindUserPosts: error fetching posts - %w", err)
+	}
+
+	for rows.Next() {
+		var post models.Post
+		err := rows.Scan(&post.ID, &post.Title, &post.Body)
+		if err != nil {
+			return nil, fmt.Errorf("UserRepository.FindUserPosts: error scanning posts - %w", err)
+		}
+
+		posts = append(posts, post)
+	}
+
+    return posts, nil
 }
