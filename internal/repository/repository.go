@@ -13,6 +13,7 @@ type UserRepository interface {
 	Save(user models.User) error
 	SavePost(userId string, post models.Post) error
     FindUserPosts(userId string) ([]models.Post, error)
+    DeletePost(postId string) error
 }
 
 type userRepositoryImpl struct {
@@ -101,4 +102,15 @@ func (r *userRepositoryImpl) FindUserPosts(userId string) ([]models.Post, error)
 	}
 
     return posts, nil
+}
+
+func (r *userRepositoryImpl) DeletePost(postId string) error {
+    query := `DELETE FROM posts WHERE id = $1`
+
+    _, err := r.db.Exec(query, postId)
+    if err != nil {
+        return fmt.Errorf("UserRepository.DeletePost: error deleting post - %w", err)
+    }
+
+    return nil
 }

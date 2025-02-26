@@ -21,6 +21,9 @@ func TestRepository(t *testing.T) {
 	}
 	repo := NewUserRepository(db)
 
+    db.Exec("DELETE FROM users")
+    db.Exec("DELETE FROM posts")
+
 	t.Run("Test create new user", func(t *testing.T) {
 		db.Exec("DELETE FROM users")
 
@@ -89,11 +92,28 @@ func TestRepository(t *testing.T) {
 		err = repo.SavePost(user.ID, post)
 		assert.NoError(t, err)
 
-        posts, err := repo.FindUserPosts(user.ID)
+		posts, err := repo.FindUserPosts(user.ID)
 
 		assert.NoError(t, err)
 		assert.Len(t, posts, 1)
-        assert.Equal(t, "My first post", posts[0].Title)
-        assert.Equal(t, "This is my first post", posts[0].Body)
+		assert.Equal(t, "My first post", posts[0].Title)
+		assert.Equal(t, "This is my first post", posts[0].Body)
+	})
+
+	t.Run("Test delete post", func(t *testing.T) {
+		userId := uuid.New().String()
+		postId := uuid.New().String()
+
+		db.Exec("DELETE FROM users")
+		db.Exec("DELETE FROM posts")
+		db.Exec("INSERT INTO users (id, first_name, username) VALUES ($1, $2, $3)", userId, "Gabriel", "dinizgab")
+		db.Exec("INSERT INTO posts (id, user_id, title, body) VALUES ($1, $2, $3, $4)", postId, userId, "My first post", "This is my first post")
+    
+        err := repo.DeletePost(postId)
+        assert.NoError(t, err)
+
+        posts, err := repo.FindUserPosts(userId)
+        assert.NoError(t, err)
+        assert.Len(t, posts, 0)
 	})
 }

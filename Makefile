@@ -1,7 +1,7 @@
 args?="./..."
 .PHONY: test
 test: up-db migrate
-	docker compose --profile test run --rm --build apitest go test --tags=integration -failfast -v $(args)
+	docker compose --profile test run --rm --build apitest go test --tags=integration -failfast -v -p 1 -count=1 $(args)
 
 up-db:
 	docker compose up -d database
