@@ -33,7 +33,7 @@ func TestRepository(t *testing.T) {
 
 		assert.NoError(t, err)
 
-        users, err := repo.FindAll()
+		users, err := repo.FindAll()
 		assert.NoError(t, err)
 		assert.Equal(t, "Gabriel", users[0].FirstName)
 		assert.Equal(t, "dinizgab", users[0].Username)
@@ -43,8 +43,8 @@ func TestRepository(t *testing.T) {
 	t.Run("Test find all users", func(t *testing.T) {
 		db.Exec("DELETE FROM users")
 
-        db.Exec("INSERT INTO users (first_name, username) VALUES ($1, $2)", "Gabriel", "dinizgab")
-        db.Exec("INSERT INTO users (first_name, username) VALUES ($1, $2)", "Joao", "john")
+		db.Exec("INSERT INTO users (first_name, username) VALUES ($1, $2)", "Gabriel", "dinizgab")
+		db.Exec("INSERT INTO users (first_name, username) VALUES ($1, $2)", "Joao", "john")
 
 		users, err := repo.FindAll()
 
@@ -52,21 +52,48 @@ func TestRepository(t *testing.T) {
 		assert.Len(t, users, 2)
 	})
 
-    t.Run("Test find user by id", func(t *testing.T) {
-        db.Exec("DELETE FROM users")
+	t.Run("Test find user by id", func(t *testing.T) {
+		db.Exec("DELETE FROM users")
 
-        user := models.User{
-            ID: uuid.New().String(),
-            FirstName: "Gabriel",
-            Username: "dinizgab",
-        }
+		user := models.User{
+			ID:        uuid.New().String(),
+			FirstName: "Gabriel",
+			Username:  "dinizgab",
+		}
 
-        db.Exec("INSERT INTO users (id, first_name, username) VALUES ($1, $2, $3)", user.ID, user.FirstName, user.Username)
+		db.Exec("INSERT INTO users (id, first_name, username) VALUES ($1, $2, $3)", user.ID, user.FirstName, user.Username)
 
-        user, err := repo.FindByID(user.ID)
+		user, err := repo.FindByID(user.ID)
 
-        assert.NoError(t, err)
-        assert.Equal(t, "Gabriel", user.FirstName)
-        assert.Equal(t, "dinizgab", user.Username)
-    })
+		assert.NoError(t, err)
+		assert.Equal(t, "Gabriel", user.FirstName)
+		assert.Equal(t, "dinizgab", user.Username)
+	})
+
+	t.Run("Test create new post for user", func(t *testing.T) {
+		db.Exec("DELETE FROM users")
+		db.Exec("DELETE FROM posts")
+
+		user := models.User{
+			ID:        uuid.New().String(),
+			FirstName: "Gabriel",
+			Username:  "dinizgab",
+		}
+		db.Exec("INSERT INTO users (id, first_name, username) VALUES ($1, $2, $3)", user.ID, user.FirstName, user.Username)
+
+		post := models.Post{
+			Title: "My first post",
+			Body:  "This is my first post",
+		}
+
+		err = repo.SavePost(user.ID, post)
+		assert.NoError(t, err)
+
+        posts, err := repo.FindUserPosts(user.ID)
+
+		assert.NoError(t, err)
+		assert.Len(t, posts, 1)
+        assert.Equal(t, "My first post", posts[0].Title)
+        assert.Equal(t, "This is my first post", posts[0].Body)
+	})
 }
