@@ -14,6 +14,7 @@ type UserRepository interface {
 	SavePost(userId string, post models.Post) error
     FindUserPosts(userId string) ([]models.Post, error)
     DeletePost(postId string) error
+    FollowUser(userId string, followUserId string) error
 }
 
 type userRepositoryImpl struct {
@@ -113,4 +114,16 @@ func (r *userRepositoryImpl) DeletePost(postId string) error {
     }
 
     return nil
+}
+
+
+func (r * userRepositoryImpl) FollowUser(userId string, followUserId string) error {
+	query := `INSERT INTO followers (user_id, follow_user_id) VALUES ($1, $2)`
+
+	_, err := r.db.Exec(query, userId, followUserId)
+	if err != nil {
+		return fmt.Errorf("UserRepository.FollowUser: error following user - %w", err)
+	}
+
+	return nil
 }
