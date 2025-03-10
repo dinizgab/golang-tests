@@ -3,37 +3,23 @@ package db
 import (
 	"database/sql"
 	"fmt"
-	"os"
-	"strconv"
 
-    _ "github.com/lib/pq"
+	"github.com/dinizgab/golang-tests/internal/config"
+	_ "github.com/lib/pq"
 )
 
-type DBConfig struct {
-	Host     string `env:"DB_HOST"`
-	Port     int    `env:"DB_PORT"`
-	User     string `env:"DB_USER"`
-	Password string `env:"DB_PASSWORD"`
-	DBName   string `env:"DB_NAME"`
+type Database interface {
+	Exec(query string, args ...interface{}) (sql.Result, error)
+	Query(query string, args ...interface{}) (*sql.Rows, error)
+	QueryRow(query string, args ...interface{}) *sql.Row
+    Ping() error
 }
 
-func NewDBConfig() (*DBConfig, error) {
-	port, err := strconv.Atoi(os.Getenv("DB_PORT"))
-	if err != nil {
-		return nil, fmt.Errorf("db.NewDBConfig: %w", err)
-	}
-
-	return &DBConfig{
-		Host:     os.Getenv("DB_HOST"),
-		Port:     port,
-		User:     os.Getenv("DB_USER"),
-		Password: os.Getenv("DB_PASSWORD"),
-		DBName:   os.Getenv("DB_NAME"),
-	}, nil
+type databaseImpl struct {
+	conn *sql.DB
 }
 
-func New(config *DBConfig) (*sql.DB, error) {
-
+func New(config *config.DBConfig) (Database, error) {
 	db, err := sql.Open("postgres",
 		fmt.Sprintf("host=%s port=%d user=%s password=%s dbname=%s sslmode=disable",
 			config.Host,
@@ -47,5 +33,21 @@ func New(config *DBConfig) (*sql.DB, error) {
 		return nil, fmt.Errorf("db.New: %w", err)
 	}
 
-	return db, nil
+	return &databaseImpl{db}, nil
+}
+
+func (d *databaseImpl) Exec(query string, args ...interface{}) (sql.Result, error) {
+	return d.conn.Exec(query, args...)
+}
+
+func (d *databaseImpl) Query(query string, args ...interface{}) (*sql.Rows, error) {
+	return d.conn.Query(query, args...)
+}
+
+func (d *databaseImpl) QueryRow(query string, args ...interface{}) *sql.Row {
+	return d.conn.QueryRow(query, args...)
+}
+
+func (d *databaseImpl) Ping() error {
+    return d.conn.Ping()
 }

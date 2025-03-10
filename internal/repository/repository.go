@@ -1,9 +1,9 @@
 package repository
 
 import (
-	"database/sql"
 	"fmt"
 
+	"github.com/dinizgab/golang-tests/internal/db"
 	"github.com/dinizgab/golang-tests/internal/models"
 )
 
@@ -18,10 +18,10 @@ type UserRepository interface {
 }
 
 type userRepositoryImpl struct {
-	db *sql.DB
+	db db.Database
 }
 
-func NewUserRepository(db *sql.DB) UserRepository {
+func NewUserRepository(db db.Database) UserRepository {
 	return &userRepositoryImpl{db}
 }
 
@@ -84,7 +84,7 @@ func (r *userRepositoryImpl) SavePost(userId string, post models.Post) error {
 }
 
 func (r *userRepositoryImpl) FindUserPosts(userId string) ([]models.Post, error) {
-    posts := []models.Post{}
+	posts := []models.Post{}
 	query := `SELECT id, title, body FROM posts WHERE user_id = $1`
 
 	rows, err := r.db.Query(query, userId)
@@ -102,18 +102,18 @@ func (r *userRepositoryImpl) FindUserPosts(userId string) ([]models.Post, error)
 		posts = append(posts, post)
 	}
 
-    return posts, nil
+	return posts, nil
 }
 
 func (r *userRepositoryImpl) DeletePost(postId string) error {
-    query := `DELETE FROM posts WHERE id = $1`
+	query := `DELETE FROM posts WHERE id = $1`
 
-    _, err := r.db.Exec(query, postId)
-    if err != nil {
-        return fmt.Errorf("UserRepository.DeletePost: error deleting post - %w", err)
-    }
+	_, err := r.db.Exec(query, postId)
+	if err != nil {
+		return fmt.Errorf("UserRepository.DeletePost: error deleting post - %w", err)
+	}
 
-    return nil
+	return nil
 }
 
 
