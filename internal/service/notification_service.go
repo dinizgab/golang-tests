@@ -1,29 +1,28 @@
 package service
 
-import "fmt"
+import (
+	"fmt"
+
+	amqp "github.com/rabbitmq/amqp091-go"
+)
 
 type NotificationService interface {
-	Publish(queue string, metadata []byte) error
+	Publish(metadata []byte) error
 }
 
 type notificationServiceImpl struct {
-	conn BrokerConnection
+	conn    BrokerConnection
+	channel BrokerChannel
+	queue   amqp.Queue
 }
 
-func NewNotificationService(conn BrokerConnection) NotificationService {
-	return &notificationServiceImpl{
-		conn,
-	}
-}
-
-func (n *notificationServiceImpl) Publish(queue string, metadata []byte) error {
-	ch, err := n.conn.Channel()
+func NewNotificationService(queue string, conn BrokerConnection) (NotificationService, error) {
+	ch, err := conn.Channel()
 	if err != nil {
-		return fmt.Errorf("NotificationService.Publish: error creating channel - %w", err)
+		return nil, fmt.Errorf("NotificationService.NewNotificationService: error creating channel - %w", err)
 	}
-	defer ch.Close()
 
-    q, err := ch.QueueDeclare(
+	q, err := ch.QueueDeclare(
 		queue,
 		true,
 		false,
@@ -32,19 +31,27 @@ func (n *notificationServiceImpl) Publish(queue string, metadata []byte) error {
 		nil,
 	)
 	if err != nil {
-		return fmt.Errorf("NotificationService.Publish: error declaring queue - %w", err)
+		return nil, fmt.Errorf("NotificationService.NewNotificationService: error declaring queue - %w", err)
 	}
 
-    err = ch.Publish(
-        "",
-        q.Name,
-        false,
-        false,
-        metadata,
-    )
-    if err != nil {
-        return fmt.Errorf("NotificationService.Publish: error publishing message - %w", err)
-    }
+	return &notificationServiceImpl{
+		conn,
+		ch,
+		q,
+	}, err
+}
+
+func (n *notificationServiceImpl) Publish(metadata []byte) error {
+	err := n.channel.Publish(
+		"",
+		n.queue.Name,
+		false,
+		false,
+		metadata,
+	)
+	if err != nil {
+		return fmt.Errorf("NotificationService.Publish: error publishing message - %w", err)
+	}
 
 	return nil
 }

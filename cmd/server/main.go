@@ -12,6 +12,8 @@ import (
 	"github.com/dinizgab/golang-tests/internal/usecase"
 )
 
+const notificationTopic = "notification"
+
 func main() {
 	dbConfig, err := config.NewDBConfig()
 	if err != nil {
@@ -31,15 +33,18 @@ func main() {
 	if err != nil {
 		log.Fatal(err)
 	}
-	notificationService := service.NewNotificationService(broker)
+	notificationService, err := service.NewNotificationService(notificationTopic, broker)
+	if err != nil {
+		log.Fatal(err)
+	}
 
 	userRepository := repository.NewUserRepository(db)
-    userUsecase := usecase.NewUserUsecase(userRepository, notificationService)
+	userUsecase := usecase.NewUserUsecase(userRepository, notificationService)
 
-    http.HandleFunc("GET /users", handlers.FindAllUsers(userUsecase))
-    http.HandleFunc("GET /users/{id}", handlers.FindUserByID(userUsecase))
-    http.HandleFunc("POST /users", handlers.CreateUser(userUsecase))
-    http.HandleFunc("POST /users/follow", handlers.FollowUser(userUsecase))
+	http.HandleFunc("GET /users", handlers.FindAllUsers(userUsecase))
+	http.HandleFunc("GET /users/{id}", handlers.FindUserByID(userUsecase))
+	http.HandleFunc("POST /users", handlers.CreateUser(userUsecase))
+	http.HandleFunc("POST /users/follow", handlers.FollowUser(userUsecase))
 
-    log.Fatal(http.ListenAndServe(":8080", nil))
+	log.Fatal(http.ListenAndServe(":8080", nil))
 }

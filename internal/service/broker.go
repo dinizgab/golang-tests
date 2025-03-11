@@ -13,6 +13,7 @@ type BrokerConnection interface {
 }
 
 type BrokerChannel interface {
+	Consume(queue, consumer string, autoAck, exclusive, noLocal, noWait bool, args map[string]interface{}) (<-chan amqp.Delivery, error)
 	QueueDeclare(name string, durable, autoDelete, exclusive, noWait bool, args map[string]interface{}) (amqp.Queue, error)
 	Publish(exchange, key string, mandatory, immediate bool, msg []byte) error
 	Close() error
@@ -27,7 +28,7 @@ type brokerChannelImpl struct {
 }
 
 func NewBrokerConnection() (BrokerConnection, error) {
-    dsn := os.Getenv("BROKER_DSN")
+	dsn := os.Getenv("BROKER_DSN")
 
 	conn, err := amqp.Dial(dsn)
 	if err != nil {
@@ -50,15 +51,25 @@ func (bc *brokerConnectionImpl) Close() error {
 	return bc.conn.Close()
 }
 
+func (bc *brokerChannelImpl) Consume(queue, consumer string, autoAck, exclusive, noLocal, noWait bool, args map[string]interface{}) (<-chan amqp.Delivery, error) {
+	return bc.ch.Consume(queue, consumer, autoAck, exclusive, noLocal, noWait, args)
+}
+
 func (bc *brokerChannelImpl) QueueDeclare(name string, durable, autoDelete, exclusive, noWait bool, args map[string]interface{}) (amqp.Queue, error) {
 	return bc.ch.QueueDeclare(name, durable, autoDelete, exclusive, noWait, args)
 }
 
 func (bc *brokerChannelImpl) Publish(exchange, key string, mandatory, immediate bool, msg []byte) error {
-	return bc.ch.Publish(exchange, key, mandatory, immediate, amqp.Publishing{
-		ContentType: "application/json",
-		Body:        msg,
-	})
+	return bc.ch.Publish(
+		exchange,
+		key,
+		mandatory,
+		immediate,
+		amqp.Publishing{
+			ContentType: "application/json",
+			Body:        msg,
+		},
+	)
 }
 
 func (bc *brokerChannelImpl) Close() error {

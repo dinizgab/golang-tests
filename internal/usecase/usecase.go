@@ -9,8 +9,6 @@ import (
 	"github.com/dinizgab/golang-tests/internal/service"
 )
 
-const notificationTopic = "notification"
-
 type UserUsecase interface {
 	FindAll() ([]models.User, error)
 	FindByID(id string) (models.User, error)
@@ -45,15 +43,15 @@ func (u *userUsecaseImpl) Save(user models.User) error {
     return u.repo.Save(user)
 }
 
-func (u *userUsecaseImpl) FollowUser(followerUserId string, followedUsedId string) error {
+func (u *userUsecaseImpl) FollowUser(followerUserId string, followedUserId string) error {
 	// TODO - Implement pipeline pattern (good blog post)
-	err := u.repo.FollowUser(followerUserId, followedUsedId)
+	err := u.repo.FollowUser(followerUserId, followedUserId)
 	if err != nil {
 		return err
 	}
 
 	body, err := json.Marshal(map[string]string{
-		"user_id":     followedUsedId,
+		"user_id":     followedUserId,
 		"followed_by": followerUserId,
 		"message":     "Hey, you have a new follower!",
 	})
@@ -61,7 +59,7 @@ func (u *userUsecaseImpl) FollowUser(followerUserId string, followedUsedId strin
 		return fmt.Errorf("UserUsecase.FollowUser: error marshalling notification body - %w", err)
 	}
 
-	err = u.notificationService.Publish(notificationTopic, body)
+	err = u.notificationService.Publish(body)
 	if err != nil {
 		return fmt.Errorf("UserUsecase.FollowUser: error sending notification - %w", err)
 	}

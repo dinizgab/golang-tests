@@ -10,6 +10,8 @@ services:
       - database
       - broker
     profiles: ["local", "test"]
+    ports:
+      - "8080:8080"
     environment:
       - DB_HOST=database
       - DB_PORT=5432
@@ -21,6 +23,20 @@ services:
       - database
       - broker
     entrypoint: ["go", "run", "cmd/server/main.go"]
+
+  notification:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    networks:
+      - broker
+    profiles: ["local"]
+    environment:
+      - BROKER_DSN=amqp://guest:guest@broker:5672/
+    depends_on:
+      - local
+      - broker
+    entrypoint: ["go", "run", "cmd/notification/main.go"]
 
   apitest:
     build:
