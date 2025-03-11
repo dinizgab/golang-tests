@@ -1,27 +1,36 @@
 package usecase
 
 import (
+	"encoding/json"
+	"fmt"
+
 	"github.com/dinizgab/golang-tests/internal/models"
 	"github.com/dinizgab/golang-tests/internal/repository"
+	"github.com/dinizgab/golang-tests/internal/service"
 )
 
+const notificationTopic = "notification"
 
 type UserUsecase interface {
 	FindAll() ([]models.User, error)
 	FindByID(id string) (models.User, error)
 	Save(user models.User) error
-	SavePost(userId string, post models.Post) error
-    FindUserPosts(userId string) ([]models.Post, error)
-    DeletePost(postId string) error
-    FollowUser(userId string, followUserId string) error
+	FollowUser(userId string, followUserId string) error
 }
 
 type userUsecaseImpl struct {
-	repo repository.UserRepository
+	repo                repository.UserRepository
+	notificationService service.NotificationService
 }
 
-func NewUserUsecase(repo repository.UserRepository) UserUsecase {
-	return &userUsecaseImpl{repo}
+func NewUserUsecase(
+	repo repository.UserRepository,
+	notificationService service.NotificationService,
+) UserUsecase {
+	return &userUsecaseImpl{
+		repo,
+		notificationService,
+	}
 }
 
 func (u *userUsecaseImpl) FindAll() ([]models.User, error) {
@@ -33,23 +42,29 @@ func (u *userUsecaseImpl) FindByID(id string) (models.User, error) {
 }
 
 func (u *userUsecaseImpl) Save(user models.User) error {
-	return u.repo.Save(user)
+    return u.repo.Save(user)
 }
 
-func (u *userUsecaseImpl) SavePost(userId string, post models.Post) error {
-	return u.repo.SavePost(userId, post)
-}
+func (u *userUsecaseImpl) FollowUser(followerUserId string, followedUsedId string) error {
+	// TODO - Implement pipeline pattern (good blog post)
+	err := u.repo.FollowUser(followerUserId, followedUsedId)
+	if err != nil {
+		return err
+	}
 
-func (u *userUsecaseImpl) FindUserPosts(userId string) ([]models.Post, error) {
-	return u.repo.FindUserPosts(userId)
-}
+	body, err := json.Marshal(map[string]string{
+		"user_id":     followedUsedId,
+		"followed_by": followerUserId,
+		"message":     "Hey, you have a new follower!",
+	})
+	if err != nil {
+		return fmt.Errorf("UserUsecase.FollowUser: error marshalling notification body - %w", err)
+	}
 
-func (u *userUsecaseImpl) DeletePost(postId string) error {
-	return u.repo.DeletePost(postId)
-}
+	err = u.notificationService.Publish(notificationTopic, body)
+	if err != nil {
+		return fmt.Errorf("UserUsecase.FollowUser: error sending notification - %w", err)
+	}
 
-func (u *userUsecaseImpl) FollowUser(userId string, followUserId string) error {
-	// TODO - Add the call to the broker to notify the user that he is being followed
-
-	return u.repo.FollowUser(userId, followUserId)
+	return nil
 }

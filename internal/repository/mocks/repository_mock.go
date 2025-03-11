@@ -12,15 +12,23 @@ type UserRepositoryMock struct {
 func (m *UserRepositoryMock) FindAll() ([]models.User, error) {
 	ret := m.Called()
 
-	var r0 []models.User
-	if ret.Get(0) != nil {
-		r0 = ret.Get(0).([]models.User)
-	}
+    return ret.Get(0).([]models.User), ret.Get(1).(error)
+}
 
-	var r1 error
-	if ret.Get(1) != nil {
-		r1 = ret.Get(1).(error)
-	}
+func (m *UserRepositoryMock) FindByID(id string) (models.User, error) {
+    ret := m.Called(id)
 
-	return r0, r1
+    return ret.Get(0).(models.User), ret.Get(1).(error)
+}
+
+func (m *UserRepositoryMock) Save(user models.User) error {
+    ret := m.Called(user)
+
+    return ret.Get(0).(error)
+}
+
+func (m *UserRepositoryMock) FollowUser(userId string, followUserId string) error {
+    ret := m.Called(userId, followUserId)
+
+    return ret.Get(0).(error)
 }
