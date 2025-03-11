@@ -3,7 +3,7 @@ package repository
 import (
 	"testing"
 
-	"github.com/dinizgab/golang-tests/internal/db"
+	"github.com/dinizgab/golang-tests/internal/db/mocks"
 	"github.com/dinizgab/golang-tests/internal/models"
 	"github.com/stretchr/testify/assert"
 )
@@ -11,11 +11,11 @@ import (
 func TestRepositoryUnit(t *testing.T) {
 	queryInsertUser := `INSERT INTO users (first_name, username) VALUES ($1, $2)`
 
-	database := new(db.DatabaseMock)
+	database := new(mocks.DatabaseMock)
 	repo := NewUserRepository(database)
 
 	t.Run("Test create new user", func(t *testing.T) {
-		res := new(db.SqlResultMock)
+		res := new(mocks.SqlResultMock)
 		database.On("Exec", queryInsertUser, []interface{}{"gabriel", "dinizgab"}).Return(res, nil)
 
 		err := repo.Save(models.User{
